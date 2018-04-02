@@ -79,6 +79,12 @@ class Kinect {
 	bool		checkNewVideoFrame();
 	//! Returns whether there is a new depth frame available since the last call to checkNewDepthFrame(). Call getDepthImage() to retrieve it.
 	bool		checkNewDepthFrame();
+    
+    
+    int minDistance();
+    void minDistance(int dist);
+    int maxDistance();
+    void maxDistance(int dist);
 
 	//! Sets the tilt of the motor measured in degrees. The device supports a range from -31 to +32 degrees.
 	void		setTilt( float degrees );
@@ -107,7 +113,7 @@ class Kinect {
 	ImageSourceRef			getDepthImage();
 
 	std::shared_ptr<uint8_t>	getVideoData();
-	std::shared_ptr<uint16_t>	getDepthData();
+	std::shared_ptr<float>	getDepthData();
 
 	//! Sets the video image returned by getVideoImage() and getVideoData() to be infrared when \a infrared is true, color when it's false (the default)
 	void		setVideoInfrared( bool infrared = true );
@@ -168,7 +174,10 @@ class Kinect {
 		freenect_device					*mDevice;
 
 		BufferManager<uint8_t>			mColorBuffers;
-		BufferManager<uint16_t>			mDepthBuffers;
+		BufferManager<float>			mDepthBuffers;
+        
+        int mMinDist;
+        int mMaxDist;
 		
 		volatile bool					mShouldDie;
 		volatile bool					mVideoInfrared;
