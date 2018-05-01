@@ -216,7 +216,7 @@ void Kinect::depthImageCB( freenect_device *dev, void *d, uint32_t timestamp )
 		for( size_t p = 0; p < 640 * 480; ++p ) {						// out = 1.0 - ( in / 2048 ) ^ 2
 			uint32_t v = depth[p];
             if(v==2047){
-                destPixels[p] = 0;
+                destPixels[p] = 1;
                 continue;
             }
             
@@ -225,8 +225,7 @@ void Kinect::depthImageCB( freenect_device *dev, void *d, uint32_t timestamp )
             destPixels[p] = glm::clamp(ci::lmap<float>(v, minDist, maxDist, 0.f, 1.f), 0.f, 1.f);
 //            float vp = destPixels[p];
             
-//            destPixels[p] = 65535 - ( v * v ) >> 4;                        // 1 / ( 2^10 * 2^10 ) * 2^16 = 2^-4
-            if(v==2047) destPixels[p] = 0;
+//            destPixels[p] = 65535 - ( v * v ) >> 4;                        // 1 / ( 2^10 * 2^10 ) * 2^16 = 2^-4;
 		}
 		kinectObj->mDepthBuffers.setActiveBuffer( destPixels );			// set this new buffer to be the current active buffer
 		kinectObj->mNewDepthFrame = true;								// flag that there's a new depth frame
