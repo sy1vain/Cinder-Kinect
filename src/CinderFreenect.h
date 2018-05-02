@@ -85,6 +85,8 @@ class Kinect {
     void minDistance(int dist);
     int maxDistance();
     void maxDistance(int dist);
+    bool outOfRangeInverse();
+    void outOfRangeInverse(bool inverse);
 
 	//! Sets the tilt of the motor measured in degrees. The device supports a range from -31 to +32 degrees.
 	void		setTilt( float degrees );
@@ -178,6 +180,7 @@ class Kinect {
         
         int mMinDist;
         int mMaxDist;
+        bool mOORInverse; //out of range inverse: true is white
 		
 		volatile bool					mShouldDie;
 		volatile bool					mVideoInfrared;

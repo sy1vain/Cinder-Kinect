@@ -150,7 +150,7 @@ Kinect::Obj::Obj( int deviceIndex, bool depthRegister )
 	: mColorBuffers( 640 * 480 * 3, this ), mDepthBuffers( 640 * 480, this ),
 		mShouldDie( false ), mVideoInfrared( false ),
         mNewVideoFrame( false ), mNewDepthFrame( false ),
-        mMinDist(0), mMaxDist(65535)
+        mMinDist(0), mMaxDist(65535), mOORInverse(false)
 {
 	if( freenect_open_device( getContext(), &mDevice, deviceIndex ) < 0 )
 		throw ExcFailedOpenDevice();
@@ -206,26 +206,20 @@ void Kinect::depthImageCB( freenect_device *dev, void *d, uint32_t timestamp )
 		lock_guard<recursive_mutex> lock( kinectObj->mMutex );
         int minDist = kinectObj->mMinDist;
         int maxDist = kinectObj->mMaxDist;
+        bool oorInverse = kinectObj->mOORInverse;
 
 		uint16_t *depth = reinterpret_cast<uint16_t*>( d );
         
-        uint32_t min = 4095;
-
 		kinectObj->mDepthBuffers.derefActiveBuffer();					// finished with current active buffer
 		float *destPixels = kinectObj->mDepthBuffers.getNewBuffer(); // request a new buffer
 		for( size_t p = 0; p < 640 * 480; ++p ) {						// out = 1.0 - ( in / 2048 ) ^ 2
 			uint32_t v = depth[p];
-            if(v==2047){
-                destPixels[p] = 1;
+            if(v==2047){ //out of range
+                destPixels[p] = (oorInverse)?1:0;
                 continue;
             }
             
-            min = glm::min(v, min);
-//            v = (v*v) >> 4;
-            destPixels[p] = glm::clamp(ci::lmap<float>(v, minDist, maxDist, 0.f, 1.f), 0.f, 1.f);
-//            float vp = destPixels[p];
-            
-//            destPixels[p] = 65535 - ( v * v ) >> 4;                        // 1 / ( 2^10 * 2^10 ) * 2^16 = 2^-4;
+            destPixels[p] = glm::clamp(ci::lmap<float>(v, minDist, maxDist, 1.f, 0.f), 0.f, 1.f);
 		}
 		kinectObj->mDepthBuffers.setActiveBuffer( destPixels );			// set this new buffer to be the current active buffer
 		kinectObj->mNewDepthFrame = true;								// flag that there's a new depth frame
@@ -302,6 +296,16 @@ void Kinect::maxDistance(int dist){
     lock_guard<recursive_mutex> lock( mObj->mMutex );
     mObj->mMaxDist = dist;
 }
+    
+bool Kinect::outOfRangeInverse(){
+    lock_guard<recursive_mutex> lock( mObj->mMutex );
+    return mObj->mOORInverse;
+}
+    
+    void Kinect::outOfRangeInverse(bool inverse){
+        lock_guard<recursive_mutex> lock( mObj->mMutex );
+        mObj->mOORInverse = inverse;
+    }
 
 void Kinect::setTilt( float degrees )
 {
